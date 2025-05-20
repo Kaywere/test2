@@ -369,12 +369,12 @@ export default function Element() {
                   <div className="h-32 mb-4 overflow-hidden rounded-md">
                     {evidence.file_type === 'image' ? (
                       <img 
-                        src={`http://localhost:5000/api/evidences/${evidence.id}/file`}
+                        src={getApiUrl(`api/evidences/${evidence.id}/file`)}
                         alt={evidence.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                       />
                     ) : (
-                      <PDFPreview pdfUrl={`http://localhost:5000/api/evidences/${evidence.id}/file`} />
+                      <PDFPreview pdfUrl={getApiUrl(`api/evidences/${evidence.id}/file`)} />
                     )}
                   </div>
                   <div className="flex justify-between items-start mb-2">
@@ -450,14 +450,14 @@ export default function Element() {
               <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 <EnhancedPDFViewer 
                   key={selectedEvidence.updated_at}
-                  pdfUrl={`http://localhost:5000/api/evidences/${selectedEvidence.id}/file`}
+                  pdfUrl={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
                 />
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
                 <img
                   key={selectedEvidence.updated_at}
-                  src={`http://localhost:5000/api/evidences/${selectedEvidence.id}/file`}
+                  src={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
                   alt={selectedEvidence.title}
                   className="max-w-full rounded-lg shadow-lg"
                 />
