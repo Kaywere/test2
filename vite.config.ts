@@ -5,5 +5,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
-  
+  define: {
+    'process.env.VITE_API_URL': JSON.stringify('http://api.test.soss.site')
+  }
 });

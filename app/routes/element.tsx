@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import PDFViewer from "../pdfViewer";
 import { pdfjs } from 'react-pdf';
 import { Document, Page } from 'react-pdf';
+import { getApiUrl } from '../config/api';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -163,7 +164,7 @@ export default function Element() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`http://localhost:5000/api/evidences/${selectedEvidence.id}/upload`, {
+      const response = await fetch(getApiUrl(`api/evidences/${selectedEvidence.id}/upload`), {
         method: 'POST',
         body: formData,
       });
@@ -173,7 +174,7 @@ export default function Element() {
       }
 
       // تحديث قائمة الشواهد بعد الرفع
-      const updatedEvidences = await fetch(`http://localhost:5000/api/evidences/element/${id}`);
+      const updatedEvidences = await fetch(getApiUrl(`api/evidences/element/${id}`));
       const updatedData = await updatedEvidences.json();
       setEvidences(updatedData);
 
@@ -195,7 +196,7 @@ export default function Element() {
       try {
         setLoading(true);
         // جلب بيانات العنصر
-        const elementResponse = await fetch(`http://localhost:5000/api/elements/${id}`);
+        const elementResponse = await fetch(getApiUrl(`api/elements/${id}`));
         if (!elementResponse.ok) {
           throw new Error('Failed to fetch element');
         }
@@ -203,7 +204,7 @@ export default function Element() {
         setElement(elementData);
 
         // جلب الشواهد
-        const evidencesResponse = await fetch(`http://localhost:5000/api/evidences/element/${id}`);
+        const evidencesResponse = await fetch(getApiUrl(`api/evidences/element/${id}`));
         if (!evidencesResponse.ok) {
           throw new Error('Failed to fetch evidences');
         }
@@ -211,7 +212,7 @@ export default function Element() {
         setEvidences(evidencesData);
 
         // جلب العناصر المرتبطة
-        const relatedResponse = await fetch(`http://localhost:5000/api/elements/related/${id}`);
+        const relatedResponse = await fetch(getApiUrl(`api/elements/related/${id}`));
         if (!relatedResponse.ok) {
           throw new Error('Failed to fetch related elements');
         }

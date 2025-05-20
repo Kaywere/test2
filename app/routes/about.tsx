@@ -2,6 +2,7 @@ import type { Route } from "./+types/about";
 import { Link } from "react-router";
 import { useState, useEffect } from "react";
 import AboutMeForm from "../components/AboutMeForm";
+import { getApiUrl } from '../config/api';
 
 interface AboutMeData {
   name: string;
@@ -36,7 +37,7 @@ export default function About() {
 
   const fetchAboutData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/about-me');
+      const response = await fetch(getApiUrl('api/about-me'));
       const data = await response.json();
       setAboutData(data);
       setLoading(false);
@@ -48,7 +49,7 @@ export default function About() {
 
   const handleSave = async (formData: AboutMeData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/about-me', {
+      const response = await fetch(getApiUrl('api/about-me'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

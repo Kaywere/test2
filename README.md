@@ -17,7 +17,7 @@ A modern, production-ready template for building full-stack React applications u
 ## Getting Started
 
 ### Installation
-ee1
+
 Install the dependencies:
 
 ```bash
