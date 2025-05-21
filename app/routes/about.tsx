@@ -49,53 +49,61 @@ export default function About() {
 
   const handleSave = async (formData: AboutMeData) => {
     try {
+      // Helper function to clean strings and ensure proper JSON formatting
+      const cleanString = (str: string | null | undefined): string => {
+        if (!str) return '';
+        return str.toString().replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+      };
+
       // Format experience items properly
-      const formattedExperience = Array.isArray(formData.experience) ? formData.experience.map(exp => ({
-        title: exp.title || '',
-        period: exp.period || '',
-        school: exp.school || '',
-        responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities.map((r: string | any) => r.toString()) : []
-      })) : [];
+      const formattedExperience = (formData.experience || []).map(exp => ({
+        title: cleanString(exp.title),
+        period: cleanString(exp.period),
+        school: cleanString(exp.school),
+        responsibilities: (exp.responsibilities || []).map((r: string | null | undefined) => cleanString(r))
+      }));
 
       // Format skills items properly
-      const formattedSkills = Array.isArray(formData.skills) ? formData.skills.map(skill => ({
-        name: skill.name || '',
-        year: skill.year || '',
-        description: skill.description || '',
-        institution: skill.institution || ''
-      })) : [];
+      const formattedSkills = (formData.skills || []).map(skill => ({
+        name: cleanString(skill.name),
+        year: cleanString(skill.year),
+        description: cleanString(skill.description),
+        institution: cleanString(skill.institution)
+      }));
 
       // Format achievements items properly
-      const formattedAchievements = Array.isArray(formData.achievements) ? formData.achievements.map(achievement => ({
-        year: achievement.year || '',
-        title: achievement.title || '',
-        issuer: achievement.issuer || ''
-      })) : [];
+      const formattedAchievements = (formData.achievements || []).map(achievement => ({
+        year: cleanString(achievement.year),
+        title: cleanString(achievement.title),
+        issuer: cleanString(achievement.issuer)
+      }));
 
       // Format education items properly
-      const formattedEducation = Array.isArray(formData.education) ? formData.education.map(edu => ({
-        degree: edu.degree || '',
-        university: edu.university || '',
-        year: edu.year || '',
-        description: edu.description || ''
-      })) : [];
+      const formattedEducation = (formData.education || []).map(edu => ({
+        degree: cleanString(edu.degree),
+        university: cleanString(edu.university),
+        year: cleanString(edu.year),
+        description: cleanString(edu.description)
+      }));
 
       // Create the final clean data object
       const cleanData = {
-        name: formData.name || '',
-        title: formData.title || '',
-        bio: formData.bio || '',
-        image_url: formData.image_url || '',
-        email: formData.email || '',
-        phone: formData.phone || '',
-        school: formData.school || '',
+        name: cleanString(formData.name),
+        title: cleanString(formData.title),
+        bio: cleanString(formData.bio),
+        image_url: cleanString(formData.image_url),
+        email: cleanString(formData.email),
+        phone: cleanString(formData.phone),
+        school: cleanString(formData.school),
         education: formattedEducation,
         experience: formattedExperience,
         skills: formattedSkills,
         achievements: formattedAchievements
       };
 
-      console.log('Clean data being sent to server:', JSON.stringify(cleanData, null, 2));
+      // Log the exact string being sent
+      const jsonString = JSON.stringify(cleanData);
+      console.log('Clean data being sent to server:', jsonString);
       
       const response = await fetch(getApiUrl('api/about-me'), {
         method: 'PUT',
@@ -103,7 +111,7 @@ export default function About() {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(cleanData)
+        body: jsonString
       });
 
       if (!response.ok) {
