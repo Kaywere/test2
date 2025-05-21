@@ -132,7 +132,7 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
             }
         }}
     >
-        <div className="fixed inset-x-4 inset-y-12 md:inset-y-16 md:w-[600px] md:mx-auto pointer-events-none">
+        <div className="fixed inset-x-4 inset-y-14 md:inset-y-20 md:w-[600px] md:mx-auto pointer-events-none">
             <div className="w-full h-full bg-white rounded-lg shadow-xl pointer-events-auto overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="p-6 border-b border-[#FDD5E9] flex justify-between items-center bg-white sticky top-0">
