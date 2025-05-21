@@ -49,19 +49,53 @@ export default function About() {
 
   const handleSave = async (formData: AboutMeData) => {
     try {
-      // Create a clean copy of the data and ensure arrays are properly formatted
+      // Format experience items properly
+      const formattedExperience = Array.isArray(formData.experience) ? formData.experience.map(exp => ({
+        title: exp.title || '',
+        period: exp.period || '',
+        school: exp.school || '',
+        responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities.map((r: string | any) => r.toString()) : []
+      })) : [];
+
+      // Format skills items properly
+      const formattedSkills = Array.isArray(formData.skills) ? formData.skills.map(skill => ({
+        name: skill.name || '',
+        year: skill.year || '',
+        description: skill.description || '',
+        institution: skill.institution || ''
+      })) : [];
+
+      // Format achievements items properly
+      const formattedAchievements = Array.isArray(formData.achievements) ? formData.achievements.map(achievement => ({
+        year: achievement.year || '',
+        title: achievement.title || '',
+        issuer: achievement.issuer || ''
+      })) : [];
+
+      // Format education items properly
+      const formattedEducation = Array.isArray(formData.education) ? formData.education.map(edu => ({
+        degree: edu.degree || '',
+        university: edu.university || '',
+        year: edu.year || '',
+        description: edu.description || ''
+      })) : [];
+
+      // Create the final clean data object
       const cleanData = {
-        ...formData,
-        education: Array.isArray(formData.education) ? formData.education : [],
-        experience: Array.isArray(formData.experience) ? formData.experience.map(exp => ({
-          ...exp,
-          responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : []
-        })) : [],
-        skills: Array.isArray(formData.skills) ? formData.skills : [],
-        achievements: Array.isArray(formData.achievements) ? formData.achievements : []
+        name: formData.name || '',
+        title: formData.title || '',
+        bio: formData.bio || '',
+        image_url: formData.image_url || '',
+        email: formData.email || '',
+        phone: formData.phone || '',
+        school: formData.school || '',
+        education: formattedEducation,
+        experience: formattedExperience,
+        skills: formattedSkills,
+        achievements: formattedAchievements
       };
 
-      console.log('Sending data to server:', cleanData);
+      console.log('Clean data being sent to server:', JSON.stringify(cleanData, null, 2));
       
       const response = await fetch(getApiUrl('api/about-me'), {
         method: 'PUT',
