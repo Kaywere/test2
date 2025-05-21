@@ -54,9 +54,57 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
     }
   }, [initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Format and validate JSON fields before submission
+    const formattedData = {
+      ...formData,
+      education: Array.isArray(formData.education) ? formData.education : [],
+      experience: Array.isArray(formData.experience) ? formData.experience : [],
+      skills: Array.isArray(formData.skills) ? formData.skills : [],
+      achievements: Array.isArray(formData.achievements) ? formData.achievements : []
+    };
+
+    // Validate and clean arrays
+    const cleanArrayData = (arr: any[]) => {
+      return arr.map(item => {
+        if (typeof item === 'object' && item !== null) {
+          return Object.fromEntries(
+            Object.entries(item)
+              .filter(([_, v]) => v != null)
+              .map(([k, v]) => {
+                if (Array.isArray(v)) {
+                  return [k, v.filter(Boolean)];
+                }
+                return [k, v];
+              })
+          );
+        }
+        return item;
+      }).filter(Boolean);
+    };
+
+    const cleanedData = {
+      ...formattedData,
+      education: cleanArrayData(formattedData.education),
+      experience: cleanArrayData(formattedData.experience),
+      skills: cleanArrayData(formattedData.skills),
+      achievements: cleanArrayData(formattedData.achievements)
+    };
+
+    try {
+      // Validate that all arrays can be properly stringified
+      JSON.stringify(cleanedData.education);
+      JSON.stringify(cleanedData.experience);
+      JSON.stringify(cleanedData.skills);
+      JSON.stringify(cleanedData.achievements);
+      
+      onSave(cleanedData);
+    } catch (error) {
+      console.error('Error formatting data:', error);
+      alert('حدث خطأ في تنسيق البيانات. الرجاء التحقق من صحة المدخلات.');
+    }
   };
 
   if (!isOpen) return null;
