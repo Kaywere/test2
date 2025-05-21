@@ -49,7 +49,19 @@ export default function About() {
 
   const handleSave = async (formData: AboutMeData) => {
     try {
-      console.log('Sending data to server:', formData);
+      // Create a clean copy of the data and ensure arrays are properly formatted
+      const cleanData = {
+        ...formData,
+        education: Array.isArray(formData.education) ? formData.education : [],
+        experience: Array.isArray(formData.experience) ? formData.experience.map(exp => ({
+          ...exp,
+          responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : []
+        })) : [],
+        skills: Array.isArray(formData.skills) ? formData.skills : [],
+        achievements: Array.isArray(formData.achievements) ? formData.achievements : []
+      };
+
+      console.log('Sending data to server:', cleanData);
       
       const response = await fetch(getApiUrl('api/about-me'), {
         method: 'PUT',
@@ -57,7 +69,7 @@ export default function About() {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(cleanData)
       });
 
       if (!response.ok) {
