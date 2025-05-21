@@ -150,7 +150,7 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
 
                 {/* Form Content - Scrollable */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} id="edit-form" className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">الاسم</label>
                             <input
@@ -580,6 +580,7 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
                         </button>
                         <button
                             form="edit-form"
+                            onClick={handleSubmit}
                             type="submit"
                             className="px-4 py-2 bg-[#E6A0B0] hover:bg-[#FFD1D9] text-white rounded-md"
                         >
