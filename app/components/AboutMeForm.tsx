@@ -54,6 +54,21 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
     }
   }, [initialData]);
 
+  useEffect(() => {
+    if (isOpen) {
+      // Prevent background scroll when form is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore scrolling when form is closed
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup effect
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -111,14 +126,14 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
 
   return (
     <div 
-        className="fixed inset-0 bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 overflow-y-auto"
         onClick={(e) => {
             if (e.target === e.currentTarget) {
                 onClose();
             }
         }}
     >
-        <div className="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto relative">
+        <div className="my-8 bg-white rounded-lg p-8 max-w-4xl w-full relative">
             {/* Close Button */}
             <button
                 onClick={onClose}
