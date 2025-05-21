@@ -49,18 +49,90 @@ export default function About() {
 
   const handleSave = async (formData: AboutMeData) => {
     try {
+      // Helper function to clean strings and ensure proper JSON formatting
+      const cleanString = (str: string | null | undefined): string => {
+        if (!str) return '';
+        return str.toString().replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+      };
+
+      // Format experience items properly
+      const formattedExperience = (formData.experience || []).map(exp => ({
+        title: cleanString(exp.title),
+        period: cleanString(exp.period),
+        school: cleanString(exp.school),
+        responsibilities: (exp.responsibilities || []).map((r: string | null | undefined) => cleanString(r))
+      }));
+
+      // Format skills items properly
+      const formattedSkills = (formData.skills || []).map(skill => ({
+        name: cleanString(skill.name),
+        year: cleanString(skill.year),
+        description: cleanString(skill.description),
+        institution: cleanString(skill.institution)
+      }));
+
+      // Format achievements items properly
+      const formattedAchievements = (formData.achievements || []).map(achievement => ({
+        year: cleanString(achievement.year),
+        title: cleanString(achievement.title),
+        issuer: cleanString(achievement.issuer)
+      }));
+
+      // Format education items properly
+      const formattedEducation = (formData.education || []).map(edu => ({
+        degree: cleanString(edu.degree),
+        university: cleanString(edu.university),
+        year: cleanString(edu.year),
+        description: cleanString(edu.description)
+      }));
+
+      // Create the final clean data object
+      const cleanData = {
+        name: cleanString(formData.name),
+        title: cleanString(formData.title),
+        bio: cleanString(formData.bio),
+        image_url: cleanString(formData.image_url),
+        email: cleanString(formData.email),
+        phone: cleanString(formData.phone),
+        school: cleanString(formData.school),
+        education: formattedEducation,
+        experience: formattedExperience,
+        skills: formattedSkills,
+        achievements: formattedAchievements
+      };
+
+      // Log the exact string being sent
+      const jsonString = JSON.stringify(cleanData);
+      console.log('Clean data being sent to server:', jsonString);
+      
       const response = await fetch(getApiUrl('api/about-me'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: jsonString
       });
+
+      if (!response.ok) {
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Unknown error occurred';
+        } catch {
+          errorMessage = `Server returned ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
       const updatedData = await response.json();
+      console.log('Received updated data:', updatedData);
+      
       setAboutData(updatedData);
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('Error updating about data:', error);
+      alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     }
   };
 
