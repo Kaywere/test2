@@ -49,18 +49,36 @@ export default function About() {
 
   const handleSave = async (formData: AboutMeData) => {
     try {
+      console.log('Sending data to server:', formData);
+      
       const response = await fetch(getApiUrl('api/about-me'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(formData),
       });
+
+      if (!response.ok) {
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || 'Unknown error occurred';
+        } catch {
+          errorMessage = `Server returned ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
       const updatedData = await response.json();
+      console.log('Received updated data:', updatedData);
+      
       setAboutData(updatedData);
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('Error updating about data:', error);
+      alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     }
   };
 

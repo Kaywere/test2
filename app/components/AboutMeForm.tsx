@@ -73,7 +73,7 @@ export default function AboutMeForm({ isOpen, onClose, onSave, initialData }: Ab
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-2 border border-[#FDD5E9] rounded-md focus:outline-none focus:ring-2 focus:ring-[#E6A0B0]"
-              placeholder="مثال: سلوى الزهراني"
+              placeholder="مثال: نوال الغامدي"
               required
             />
           </div>
