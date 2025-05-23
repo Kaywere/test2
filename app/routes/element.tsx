@@ -24,11 +24,13 @@ interface Evidence {
   evidence_number: string;
   title: string;
   description: string;
-  file_type: 'pdf' | 'image';
+  file_type: 'pdf' | 'image' | 'none';
   file_name: string;
   mime_type: string;
   created_at: string;
   updated_at: string;
+  isEditing?: boolean;
+  isNew?: boolean;
 }
 
 export function meta({ params }: Route.MetaArgs) {
@@ -223,6 +225,24 @@ export default function Element() {
     }
   };
 
+  const handleDeleteEvidence = async (evidenceId: string) => {
+    try {
+      const response = await fetch(getApiUrl(`api/evidences/${evidenceId}`), {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete evidence');
+      }
+
+      // Remove the deleted evidence from the state
+      setEvidences(evidences.filter(e => e.id !== evidenceId));
+    } catch (error) {
+      console.error('Error deleting evidence:', error);
+      alert('حدث خطأ أثناء حذف الشاهد');
+    }
+  };
+
   useEffect(() => {
     const fetchElementAndEvidences = async () => {
       try {
@@ -395,10 +415,36 @@ export default function Element() {
               {evidences.map((evidence) => (
                 <div 
                   key={evidence.id} 
-                  className="bg-white p-5 rounded-lg shadow-sm border border-[#FDD5E9] hover:shadow-md transition-all duration-300 relative overflow-hidden group cursor-pointer"
-                  onClick={() => setSelectedEvidence(evidence)}
+                  className="bg-white p-5 rounded-lg shadow-sm border border-[#FDD5E9] hover:shadow-md transition-all duration-300 relative overflow-hidden group"
                 >
-                  <div className="h-32 mb-4 overflow-hidden rounded-md">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedEvidence({ ...evidence, isEditing: true });
+                    }}
+                    className="absolute top-3 left-3 text-[#E6A0B0] hover:text-[#D48A9A] z-10 bg-white/50 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:shadow-md transition-all duration-300 hover:bg-white hover:scale-110 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('هل أنت متأكد من حذف هذا الشاهد؟')) {
+                        handleDeleteEvidence(evidence.id);
+                      }
+                    }}
+                    className="absolute top-3 right-3 text-red-500 hover:text-red-600 z-10 bg-white/50 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:shadow-md transition-all duration-300 hover:bg-white hover:scale-110 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <div 
+                    className="h-32 mb-4 overflow-hidden rounded-md cursor-pointer"
+                    onClick={() => setSelectedEvidence(evidence)}
+                  >
                     {evidence.file_type === 'image' ? (
                       <img 
                         src={getApiUrl(`api/evidences/${evidence.id}/file`)}
@@ -416,6 +462,42 @@ export default function Element() {
                   <p className="text-gray-600 text-sm">{evidence.description}</p>
                 </div>
               ))}
+
+              {/* Add New Evidence Card */}
+              <div 
+                className="bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm border border-[#FDD5E9] hover:shadow-md transition-all duration-300 relative overflow-hidden group cursor-pointer h-[200px] flex flex-col justify-center"
+                onClick={() => {
+                  // Get the element number from the current element's ID
+                  const elementNumber = element?.id || '1';
+                  const nextEvidenceNumber = `${elementNumber}.${evidences.length + 1}`;
+                  
+                  setSelectedEvidence({ 
+                    id: '', 
+                    element_id: id || '', 
+                    evidence_number: nextEvidenceNumber,
+                    title: '',
+                    description: '',
+                    file_type: 'none',
+                    file_name: '',
+                    mime_type: '',
+                    created_at: '',
+                    updated_at: '',
+                    isEditing: true,
+                    isNew: true
+                  });
+                }}
+              >
+                <div className="h-24 mb-3 overflow-hidden rounded-md flex items-center justify-center bg-[#FEF5FB]/50">
+                  <svg className="w-10 h-10 text-[#E6A0B0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-base font-semibold text-[#E6A0B0]">إضافة شاهد جديد</h3>
+                  <span className="text-sm text-gray-500">{element?.id || '1'}.{evidences.length + 1}</span>
+                </div>
+                <p className="text-gray-600 text-xs">انقر لإضافة شاهد جديد</p>
+              </div>
             </div>
           </div>
         </div>
@@ -441,80 +523,184 @@ export default function Element() {
                 </svg>
               </button>
 
-              <div className="flex-1 text-center mx-4">
-                <h3 className="text-xl font-semibold text-[#E6A0B0] mb-1">{selectedEvidence.title}</h3>
-                {selectedEvidence.description && (
-                  <p className="text-gray-600 text-lg">{selectedEvidence.description}</p>
-                )}
-              </div>
+              {selectedEvidence.isEditing ? (
+                <div className="flex-1 mx-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">رقم الشاهد</label>
+                    <input
+                      type="text"
+                      value={selectedEvidence.evidence_number}
+                      onChange={(e) => setSelectedEvidence({ ...selectedEvidence, evidence_number: e.target.value })}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#E6A0B0] focus:ring-[#E6A0B0]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
+                    <input
+                      type="text"
+                      value={selectedEvidence.title}
+                      onChange={(e) => setSelectedEvidence({ ...selectedEvidence, title: e.target.value })}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#E6A0B0] focus:ring-[#E6A0B0]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">الوصف</label>
+                    <textarea
+                      value={selectedEvidence.description || ''}
+                      onChange={(e) => setSelectedEvidence({ ...selectedEvidence, description: e.target.value })}
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#E6A0B0] focus:ring-[#E6A0B0]"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 text-center mx-4">
+                  <h3 className="text-xl font-semibold text-[#E6A0B0] mb-1">{selectedEvidence.title}</h3>
+                  {selectedEvidence.description && (
+                    <p className="text-gray-600 text-lg">{selectedEvidence.description}</p>
+                  )}
+                </div>
+              )}
 
               <div className="flex items-center gap-4">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".pdf,image/*"
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile || deletingFile}
-                  className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-                >
-                  {uploadingFile ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      جاري الرفع...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      رفع ملف
-                    </>
-                  )}
-                </button>
-                {selectedEvidence.file_type && (
-                  <button
-                    onClick={handleDeleteFile}
-                    disabled={uploadingFile || deletingFile}
-                    className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-                  >
-                    {deletingFile ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        جاري الحذف...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        حذف الملف
-                      </>
+                {selectedEvidence.isEditing ? (
+                  <>
+                    <button
+                      onClick={async () => {
+                        try {
+                          if (selectedEvidence.isNew) {
+                            // Create new evidence
+                            const response = await fetch(getApiUrl(`api/evidences/element/${id}`), {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                title: selectedEvidence.title,
+                                description: selectedEvidence.description,
+                                evidence_number: selectedEvidence.evidence_number,
+                              }),
+                            });
+
+                            if (!response.ok) {
+                              throw new Error('Failed to create evidence');
+                            }
+
+                            const newEvidence = await response.json();
+                            setEvidences([...evidences, newEvidence]);
+                            setSelectedEvidence(newEvidence);
+                          } else {
+                            // Update existing evidence
+                            const response = await fetch(getApiUrl(`api/evidences/${selectedEvidence.id}/update`), {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                title: selectedEvidence.title,
+                                description: selectedEvidence.description,
+                                evidence_number: selectedEvidence.evidence_number,
+                              }),
+                            });
+
+                            if (!response.ok) {
+                              throw new Error('Failed to update evidence');
+                            }
+
+                            const updatedEvidence = await response.json();
+                            setEvidences(evidences.map(e => 
+                              e.id === updatedEvidence.id ? updatedEvidence : e
+                            ));
+                            setSelectedEvidence(null);
+                          }
+                        } catch (error) {
+                          console.error('Error saving evidence:', error);
+                          alert('حدث خطأ أثناء حفظ الشاهد');
+                        }
+                      }}
+                      className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-lg transition-colors"
+                    >
+                      {selectedEvidence.isNew ? 'إنشاء الشاهد' : 'حفظ التغييرات'}
+                    </button>
+                    <button
+                      onClick={() => setSelectedEvidence(null)}
+                      className="text-gray-600 hover:text-gray-800 py-2 px-4 rounded-lg transition-colors"
+                    >
+                      إلغاء
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept=".pdf,image/*"
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingFile || deletingFile}
+                      className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
+                    >
+                      {uploadingFile ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          جاري الرفع...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          رفع ملف
+                        </>
+                      )}
+                    </button>
+                    {selectedEvidence.file_type && (
+                      <button
+                        onClick={handleDeleteFile}
+                        disabled={uploadingFile || deletingFile}
+                        className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
+                      >
+                        {deletingFile ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            جاري الحذف...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            حذف الملف
+                          </>
+                        )}
+                      </button>
                     )}
-                  </button>
+                  </>
                 )}
               </div>
             </div>
             
-            {selectedEvidence.file_type === 'pdf' ? (
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                <EnhancedPDFViewer 
-                  key={selectedEvidence.updated_at}
-                  pdfUrl={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
-                />
-              </div>
-            ) : (
-              <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
-                <img
-                  key={selectedEvidence.updated_at}
-                  src={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
-                  alt={selectedEvidence.title}
-                  className="max-w-full rounded-lg shadow-lg"
-                />
-              </div>
+            {!selectedEvidence.isEditing && (
+              selectedEvidence.file_type === 'pdf' ? (
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <EnhancedPDFViewer 
+                    key={selectedEvidence.updated_at}
+                    pdfUrl={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
+                  <img
+                    key={selectedEvidence.updated_at}
+                    src={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
+                    alt={selectedEvidence.title}
+                    className="max-w-full rounded-lg shadow-lg"
+                  />
+                </div>
+              )
             )}
           </div>
         </div>
