@@ -5,8 +5,8 @@ import { useState } from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "بورتفوليو المعلمة" },
-    { name: "description", content: "بورتفوليو المعلمة - عناصر تقييم الأداء الوظيفي والشواهد" },
+    { title: "الشواهد" },
+    { name: "description", content: "عناصر تقييم الأداء الوظيفي والشواهد" },
   ];
 }
 
