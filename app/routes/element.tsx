@@ -777,29 +777,6 @@ export default function Element() {
                             className="w-full h-full"
                           />
                         )}
-                        <div className="absolute bottom-4 right-4 flex gap-2">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            accept=".pdf,image/*,video/*"
-                          />
-                          <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploadingFile}
-                            className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {uploadingFile ? 'جاري الرفع...' : 'تغيير الملف'}
-                          </button>
-                          <button
-                            onClick={handleDeleteFile}
-                            disabled={deletingFile}
-                            className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {deletingFile ? 'جاري الحذف...' : 'حذف الملف'}
-                          </button>
-                        </div>
                       </>
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
@@ -823,6 +800,31 @@ export default function Element() {
                       </div>
                     )}
                   </div>
+                  {selectedEvidence.file_type !== 'none' && (
+                    <div className="flex justify-end gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept=".pdf,image/*,video/*"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingFile}
+                        className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingFile ? 'جاري الرفع...' : 'تغيير الملف'}
+                      </button>
+                      <button
+                        onClick={handleDeleteFile}
+                        disabled={deletingFile}
+                        className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingFile ? 'جاري الحذف...' : 'حذف الملف'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-center gap-4">
