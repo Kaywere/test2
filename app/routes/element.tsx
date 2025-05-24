@@ -787,22 +787,24 @@ export default function Element() {
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
                         <p className="text-gray-500">لا يوجد ملف مرفق</p>
-                        <div className="flex gap-4">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            accept=".pdf,image/*,video/*"
-                          />
-                          <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploadingFile}
-                            className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {uploadingFile ? 'جاري الرفع...' : 'رفع ملف'}
-                          </button>
-                        </div>
+                        {siteConfig.editable && (
+                          <div className="flex gap-4">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              onChange={handleFileUpload}
+                              className="hidden"
+                              accept=".pdf,image/*,video/*"
+                            />
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploadingFile}
+                              className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {uploadingFile ? 'جاري الرفع...' : 'رفع ملف'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
