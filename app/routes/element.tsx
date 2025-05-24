@@ -24,7 +24,7 @@ interface Evidence {
   evidence_number: string;
   title: string;
   description: string;
-  file_type: 'pdf' | 'image' | 'none';
+  file_type: 'pdf' | 'image' | 'video' | 'none';
   file_name: string;
   mime_type: string;
   created_at: string;
@@ -42,38 +42,113 @@ export function meta({ params }: Route.MetaArgs) {
   ];
 }
 
-// Add PDF preview component
-const PDFPreview = ({ pdfUrl }: { pdfUrl: string }) => {
+// Add Video Player component
+const VideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-[#FEF5FB]">
+      <video 
+        controls 
+        className="w-full h-full object-contain"
+        src={videoUrl}
+      >
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  );
+};
+
+// Update PDFPreview component to handle videos
+const PDFPreview = ({ pdfUrl, fileType }: { pdfUrl: string, fileType: string }) => {
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
   useEffect(() => {
-    const loadPdfPreview = async () => {
-      try {
-        const pdf = await pdfjs.getDocument(pdfUrl).promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 1 });
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        
-        if (context) {
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
+    let cancelled = false;
+    if (fileType === 'pdf') {
+      const loadPdfPreview = async () => {
+        try {
+          const pdf = await pdfjs.getDocument(pdfUrl).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 1 });
           
-          await page.render({
-            canvasContext: context,
-            viewport: viewport
-          }).promise;
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
           
-          setPreviewUrl(canvas.toDataURL());
+          if (context) {
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            await page.render({
+              canvasContext: context,
+              viewport: viewport
+            }).promise;
+            
+            if (!cancelled) setPreviewUrl(canvas.toDataURL());
+          }
+        } catch (error) {
+          console.error('Error generating PDF preview:', error);
         }
-      } catch (error) {
-        console.error('Error generating PDF preview:', error);
-      }
-    };
+      };
+      loadPdfPreview();
+    } else if (fileType === 'video') {
+      const loadVideoPreview = async () => {
+        try {
+          const video = document.createElement('video');
+          video.src = pdfUrl;
+          video.crossOrigin = 'anonymous';
+          video.preload = 'metadata';
 
-    loadPdfPreview();
-  }, [pdfUrl]);
+          await new Promise((resolve, reject) => {
+            video.onloadedmetadata = () => resolve(null);
+            video.onerror = (e) => reject(new Error('Video metadata load error'));
+          });
+
+          // Seek to 0.1s to avoid black frames
+          await new Promise((resolve, reject) => {
+            video.currentTime = 0.1;
+            video.onseeked = () => resolve(null);
+            video.onerror = (e) => reject(new Error('Video seek error'));
+          });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const context = canvas.getContext('2d');
+
+          if (context) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            if (!cancelled) setPreviewUrl(canvas.toDataURL());
+          }
+        } catch (error) {
+          console.error('Error generating video preview:', error);
+          if (!cancelled) setPreviewUrl('');
+        }
+      };
+      loadVideoPreview();
+    }
+    return () => { cancelled = true; };
+  }, [pdfUrl, fileType]);
+
+  if (fileType === 'video') {
+    return previewUrl ? (
+      <div className="relative w-full h-full">
+        <img 
+          src={previewUrl} 
+          alt="Video Preview" 
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+    ) : (
+      <div className="w-full h-full bg-[#FEF5FB] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E6A0B0]"></div>
+      </div>
+    );
+  }
 
   return previewUrl ? (
     <img 
@@ -451,8 +526,10 @@ export default function Element() {
                         alt={evidence.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                       />
+                    ) : evidence.file_type === 'video' ? (
+                      <PDFPreview pdfUrl={getApiUrl(`api/evidences/${evidence.id}/file`)} fileType="video" />
                     ) : (
-                      <PDFPreview pdfUrl={getApiUrl(`api/evidences/${evidence.id}/file`)} />
+                      <PDFPreview pdfUrl={getApiUrl(`api/evidences/${evidence.id}/file`)} fileType="pdf" />
                     )}
                   </div>
                   <div className="flex justify-between items-start mb-2">
@@ -635,7 +712,7 @@ export default function Element() {
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileUpload}
-                      accept=".pdf,image/*"
+                      accept=".pdf,image/*,video/*"
                       className="hidden"
                     />
                     <button
@@ -690,6 +767,19 @@ export default function Element() {
                     key={selectedEvidence.updated_at}
                     pdfUrl={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
                   />
+                </div>
+              ) : selectedEvidence.file_type === 'video' ? (
+                <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
+                  <video
+                    key={selectedEvidence.updated_at}
+                    src={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
+                    controls
+                    autoPlay
+                    className="max-w-full rounded-lg shadow-lg"
+                    style={{ maxHeight: '70vh' }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
