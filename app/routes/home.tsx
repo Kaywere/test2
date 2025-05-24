@@ -22,7 +22,7 @@ export default function Home() {
             <div className="flex-1 flex items-center">
               <div className="flex-shrink-0">
                 <Link to="/" className="flex items-center">
-                  <span className="text-[#E6A0B0] text-2xl font-bold">بورتفوليو المعلمة</span>
+                  <span className="text-[#E6A0B0] text-2xl font-bold">الشواهد</span>
                   <span className="text-[#FFD1D9] ml-1">✿</span>
                 </Link>
               </div>
@@ -119,17 +119,21 @@ export default function Home() {
         
         <div className="container mx-auto max-w-5xl text-center z-10">
           <h1 className="text-4xl md:text-6xl font-bold text-[#E6A0B0] mb-6 relative inline-block">
-            بورتفوليو المعلمة المتميزة
+          شواهد الأداء الوظيفي 
+
             <span className="absolute -top-6 -right-6 text-[#FFD1D9] opacity-50 text-4xl">✿</span>
             <span className="absolute -bottom-6 -left-6 text-[#FFD1D9] opacity-50 text-4xl">❀</span>
           </h1>
           <p className="text-xl md:text-2xl text-[#D48A9A] mb-8">
-            توثيق رحلة التميز والإبداع في مسيرة التعليم
+          للمعلمة / سلوى سالم الزهراني
           </p>
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <a href="#performance-elements" className="bg-[#FFC0CB] hover:bg-[#F5B6C1] text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
               عناصر التقييم
             </a>
+            <Link to="/about" className="bg-white hover:bg-[#FFF5F6] text-[#E6A0B0] font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg border border-[#FFD1D9]">
+              نبذة عني
+            </Link>
           </div>
         </div>
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
