@@ -222,7 +222,7 @@ export default function Element() {
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [relatedElements, setRelatedElements] = useState<Element[]>([]);
+  const [allElements, setAllElements] = useState<Element[]>([]);
   
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -338,14 +338,13 @@ export default function Element() {
         const evidencesData = await evidencesResponse.json();
         setEvidences(evidencesData);
 
-        // جلب العناصر المرتبطة
-        const relatedResponse = await fetch(getApiUrl(`api/elements/related/${id}`));
-        if (!relatedResponse.ok) {
-          throw new Error('Failed to fetch related elements');
+        // جلب جميع العناصر
+        const allElementsResponse = await fetch(getApiUrl(`api/elements`));
+        if (!allElementsResponse.ok) {
+          throw new Error('Failed to fetch all elements');
         }
-        const relatedData = await relatedResponse.json();
-        setRelatedElements(relatedData);
-
+        const allElementsData = await allElementsResponse.json();
+        setAllElements(allElementsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'حدث خطأ أثناء جلب البيانات');
       } finally {
@@ -357,6 +356,35 @@ export default function Element() {
       fetchElementAndEvidences();
     }
   }, [id]);
+
+  // Compute next 3 elements in order, skipping the current one
+  const getOrderedRelatedElements = () => {
+    if (!element || allElements.length === 0) return [];
+    // Sort numerically by id (assuming id is a string of a number)
+    const sorted = [...allElements].sort((a, b) => Number(a.id) - Number(b.id));
+    const currentIdx = sorted.findIndex(e => e.id === element.id);
+    const related: Element[] = [];
+    if (sorted.length === 1) return related;
+    if (element.id === '1') {
+      // Special case: show 2, 3, 4 if they exist
+      for (let i = 1; i <= 3; i++) {
+        const found = sorted.find(e => e.id === String(i + 1 - 0));
+        if (found) related.push(found);
+      }
+      return related;
+    }
+    // Previous element (wrap around)
+    let prevIdx = (currentIdx - 1 + sorted.length) % sorted.length;
+    if (sorted[prevIdx].id !== element.id) related.push(sorted[prevIdx]);
+    // Next element (wrap around)
+    let nextIdx = (currentIdx + 1) % sorted.length;
+    if (sorted[nextIdx].id !== element.id) related.push(sorted[nextIdx]);
+    // Next+1 element (wrap around)
+    let next2Idx = (currentIdx + 2) % sorted.length;
+    if (sorted[next2Idx].id !== element.id) related.push(sorted[next2Idx]);
+    // Ensure only 3 and unique
+    return related.filter((e, i, arr) => arr.findIndex(x => x.id === e.id) === i).slice(0, 3);
+  };
 
   if (loading) {
     return (
@@ -536,7 +564,7 @@ export default function Element() {
                     <h3 className="text-lg font-semibold text-[#E6A0B0]">{evidence.title}</h3>
                     <span className="text-sm text-gray-500">{evidence.evidence_number}</span>
                   </div>
-                  <p className="text-gray-600 text-sm">{evidence.description}</p>
+                  <p className="text-gray-600 text-sm" dangerouslySetInnerHTML={{ __html: evidence.description ? evidence.description.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#E6A0B0] underline">$1</a>') : '' }} />
                 </div>
               ))}
 
@@ -589,208 +617,130 @@ export default function Element() {
             }
           }}
         >
-          <div className="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[95vh] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              {selectedEvidence.isEditing ? (
-                <div className="flex-1 mx-4 space-y-4">
+          <div className="bg-gradient-to-br from-[#FEF5FB] to-white border-2 border-[#FFD1D9] rounded-3xl p-8 max-w-2xl w-full max-h-[95vh] flex flex-col shadow-2xl relative transition-transform duration-300 hover:scale-[1.02]">
+            {/* Enhanced Close Button */}
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-red-500 bg-white shadow-md rounded-full p-2 transition-colors duration-200 cursor-pointer z-20 border border-gray-200"
+              style={{ fontSize: '1.75rem', lineHeight: 1 }}
+              aria-label="إغلاق"
+            >
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* Form Content */}
+            {selectedEvidence.isEditing ? (
+              <form className="flex flex-col items-center justify-center w-full max-w-md mx-auto space-y-8 bg-white/80 rounded-2xl shadow-lg p-8 mt-4">
+                <h2 className="text-2xl font-bold text-[#E6A0B0] mb-2 tracking-tight">{selectedEvidence.isNew ? 'إضافة شاهد جديد' : 'تعديل الشاهد'}</h2>
+                <div className="w-full space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">رقم الشاهد</label>
+                    <label className="block text-sm font-medium text-[#E6A0B0] mb-1">رقم الشاهد</label>
                     <input
                       type="text"
                       value={selectedEvidence.evidence_number}
                       onChange={(e) => setSelectedEvidence({ ...selectedEvidence, evidence_number: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#E6A0B0] focus:ring-[#E6A0B0]"
+                      className="w-full rounded-xl border border-[#FFD1D9] shadow-sm focus:border-[#E6A0B0] focus:ring-2 focus:ring-[#E6A0B0]/30 px-4 py-2 text-lg bg-[#FEF5FB] placeholder-gray-400 transition-all"
+                      placeholder="مثال: 1.1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
+                    <label className="block text-sm font-medium text-[#E6A0B0] mb-1">العنوان</label>
                     <input
                       type="text"
                       value={selectedEvidence.title}
                       onChange={(e) => setSelectedEvidence({ ...selectedEvidence, title: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#E6A0B0] focus:ring-[#E6A0B0]"
+                      className="w-full rounded-xl border border-[#FFD1D9] shadow-sm focus:border-[#E6A0B0] focus:ring-2 focus:ring-[#E6A0B0]/30 px-4 py-2 text-lg bg-[#FEF5FB] placeholder-gray-400 transition-all"
+                      placeholder="عنوان الشاهد"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">الوصف</label>
+                    <label className="block text-sm font-medium text-[#E6A0B0] mb-1">الوصف</label>
                     <textarea
                       value={selectedEvidence.description || ''}
                       onChange={(e) => setSelectedEvidence({ ...selectedEvidence, description: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#E6A0B0] focus:ring-[#E6A0B0]"
+                      className="w-full rounded-xl border border-[#FFD1D9] shadow-sm focus:border-[#E6A0B0] focus:ring-2 focus:ring-[#E6A0B0]/30 px-4 py-2 text-lg bg-[#FEF5FB] placeholder-gray-400 min-h-[80px] transition-all"
                       rows={3}
+                      placeholder="أضف وصفًا أو رابطًا (اختياري)"
                     />
                   </div>
                 </div>
-              ) : (
-                <div className="flex-1 text-center mx-4">
-                  <h3 className="text-xl font-semibold text-[#E6A0B0] mb-1">{selectedEvidence.title}</h3>
-                  {selectedEvidence.description && (
-                    <p className="text-gray-600 text-lg">{selectedEvidence.description}</p>
-                  )}
-                </div>
-              )}
+                <div className="w-full border-t border-[#FFD1D9] my-2"></div>
+                <div className="flex flex-col items-center justify-center gap-3 w-full mt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        if (selectedEvidence.isNew) {
+                          // Create new evidence
+                          const response = await fetch(getApiUrl(`api/evidences/element/${id}`), {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              title: selectedEvidence.title,
+                              description: selectedEvidence.description,
+                              evidence_number: selectedEvidence.evidence_number,
+                            }),
+                          });
 
-              <div className="flex items-center gap-4">
-                {selectedEvidence.isEditing ? (
-                  <>
-                    <button
-                      onClick={async () => {
-                        try {
-                          if (selectedEvidence.isNew) {
-                            // Create new evidence
-                            const response = await fetch(getApiUrl(`api/evidences/element/${id}`), {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                title: selectedEvidence.title,
-                                description: selectedEvidence.description,
-                                evidence_number: selectedEvidence.evidence_number,
-                              }),
-                            });
-
-                            if (!response.ok) {
-                              throw new Error('Failed to create evidence');
-                            }
-
-                            const newEvidence = await response.json();
-                            setEvidences([...evidences, newEvidence]);
-                            setSelectedEvidence(newEvidence);
-                          } else {
-                            // Update existing evidence
-                            const response = await fetch(getApiUrl(`api/evidences/${selectedEvidence.id}/update`), {
-                              method: 'PUT',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                title: selectedEvidence.title,
-                                description: selectedEvidence.description,
-                                evidence_number: selectedEvidence.evidence_number,
-                              }),
-                            });
-
-                            if (!response.ok) {
-                              throw new Error('Failed to update evidence');
-                            }
-
-                            const updatedEvidence = await response.json();
-                            setEvidences(evidences.map(e => 
-                              e.id === updatedEvidence.id ? updatedEvidence : e
-                            ));
-                            setSelectedEvidence(null);
+                          if (!response.ok) {
+                            throw new Error('Failed to create evidence');
                           }
-                        } catch (error) {
-                          console.error('Error saving evidence:', error);
-                          alert('حدث خطأ أثناء حفظ الشاهد');
+
+                          const newEvidence = await response.json();
+                          setEvidences([...evidences, newEvidence]);
+                          setSelectedEvidence(newEvidence);
+                        } else {
+                          // Update existing evidence
+                          const response = await fetch(getApiUrl(`api/evidences/${selectedEvidence.id}/update`), {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              title: selectedEvidence.title,
+                              description: selectedEvidence.description,
+                              evidence_number: selectedEvidence.evidence_number,
+                            }),
+                          });
+
+                          if (!response.ok) {
+                            throw new Error('Failed to update evidence');
+                          }
+
+                          const updatedEvidence = await response.json();
+                          setEvidences(evidences.map(e => 
+                            e.id === updatedEvidence.id ? updatedEvidence : e
+                          ));
+                          setSelectedEvidence(null);
                         }
-                      }}
-                      className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-lg transition-colors"
-                    >
-                      {selectedEvidence.isNew ? 'إنشاء الشاهد' : 'حفظ التغييرات'}
-                    </button>
-                    <button
-                      onClick={() => setSelectedEvidence(null)}
-                      className="text-gray-600 hover:text-gray-800 py-2 px-4 rounded-lg transition-colors"
-                    >
-                      إلغاء
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      accept=".pdf,image/*,video/*"
-                      className="hidden"
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingFile || deletingFile}
-                      className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-                    >
-                      {uploadingFile ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          جاري الرفع...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          رفع ملف
-                        </>
-                      )}
-                    </button>
-                    {selectedEvidence.file_type && (
-                      <button
-                        onClick={handleDeleteFile}
-                        disabled={uploadingFile || deletingFile}
-                        className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-                      >
-                        {deletingFile ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            جاري الحذف...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            حذف الملف
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </>
+                      } catch (error) {
+                        console.error('Error saving evidence:', error);
+                        alert('حدث خطأ أثناء حفظ الشاهد');
+                      }
+                    }}
+                    className="bg-gradient-to-r from-[#E6A0B0] to-[#FFD1D9] hover:from-[#FFD1D9] hover:to-[#E6A0B0] text-white py-2 px-4 rounded-xl transition-all w-full max-w-xs shadow-md font-bold text-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E6A0B0] focus:ring-offset-2"
+                  >
+                    {selectedEvidence.isNew ? 'إنشاء الشاهد' : 'حفظ التغييرات'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEvidence(null)}
+                    className="text-gray-600 hover:text-red-600 hover:bg-red-100 py-2 px-4 rounded-xl transition-all w-full max-w-xs shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex-1 text-center mx-4">
+                <h3 className="text-xl font-semibold text-[#E6A0B0] mb-1">{selectedEvidence.title}</h3>
+                {selectedEvidence.description && (
+                  <p className="text-gray-600 text-lg" dangerouslySetInnerHTML={{ __html: selectedEvidence.description.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#E6A0B0] underline">$1</a>') }} />
                 )}
               </div>
-            </div>
-            
-            {!selectedEvidence.isEditing && (
-              selectedEvidence.file_type === 'pdf' ? (
-                <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                  <EnhancedPDFViewer 
-                    key={selectedEvidence.updated_at}
-                    pdfUrl={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
-                  />
-                </div>
-              ) : selectedEvidence.file_type === 'video' ? (
-                <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
-                  <video
-                    key={selectedEvidence.updated_at}
-                    src={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
-                    controls
-                    autoPlay
-                    className="max-w-full rounded-lg shadow-lg"
-                    style={{ maxHeight: '70vh' }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto overflow-x-hidden flex items-start justify-center py-4">
-                  <img
-                    key={selectedEvidence.updated_at}
-                    src={getApiUrl(`api/evidences/${selectedEvidence.id}/file`)}
-                    alt={selectedEvidence.title}
-                    className="max-w-full rounded-lg shadow-lg"
-                  />
-                </div>
-              )
             )}
           </div>
         </div>
@@ -807,7 +757,7 @@ export default function Element() {
             <span className="absolute top-0 -right-6 text-[#FFD1D9] opacity-30 text-xl">❀</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {relatedElements.map((elem) => (
+            {getOrderedRelatedElements().map((elem) => (
               <Link 
                 key={elem.id}
                 to={`/element/${elem.id}`}
