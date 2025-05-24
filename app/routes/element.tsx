@@ -251,16 +251,19 @@ export default function Element() {
         throw new Error('Failed to upload file');
       }
 
-      // تحديث قائمة الشواهد بعد الرفع
-      const updatedEvidences = await fetch(getApiUrl(`api/evidences/element/${id}`));
-      const updatedData = await updatedEvidences.json();
-      setEvidences(updatedData);
-
-      // تحديث الشاهد المحدد
-      const updatedEvidence = updatedData.find((e: Evidence) => e.id === selectedEvidence.id);
-      if (updatedEvidence) {
-        setSelectedEvidence(updatedEvidence);
+      // Fetch the updated evidence data
+      const evidenceResponse = await fetch(getApiUrl(`api/evidences/${selectedEvidence.id}`));
+      if (!evidenceResponse.ok) {
+        throw new Error('Failed to fetch updated evidence');
       }
+      const updatedEvidence = await evidenceResponse.json();
+
+      // Update the evidence in the list
+      setEvidences(evidences.map(e => e.id === updatedEvidence.id ? updatedEvidence : e));
+      
+      // Update the selected evidence with the new data
+      setSelectedEvidence(updatedEvidence);
+
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('حدث خطأ أثناء رفع الملف');
@@ -384,6 +387,10 @@ export default function Element() {
     if (sorted[next2Idx].id !== element.id) related.push(sorted[next2Idx]);
     // Ensure only 3 and unique
     return related.filter((e, i, arr) => arr.findIndex(x => x.id === e.id) === i).slice(0, 3);
+  };
+
+  const getFileUrl = (evidenceId: string) => {
+    return `${getApiUrl(`api/evidences/${evidenceId}/file`)}?t=${Date.now()}`;
   };
 
   if (loading) {
@@ -546,18 +553,22 @@ export default function Element() {
                   </button>
                   <div 
                     className="h-32 mb-4 overflow-hidden rounded-md cursor-pointer"
-                    onClick={() => setSelectedEvidence(evidence)}
+                    onClick={() => {
+                      if (!evidence.isEditing) {
+                        setSelectedEvidence(evidence);
+                      }
+                    }}
                   >
                     {evidence.file_type === 'image' ? (
                       <img 
-                        src={getApiUrl(`api/evidences/${evidence.id}/file`)}
+                        src={getFileUrl(evidence.id)}
                         alt={evidence.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                       />
                     ) : evidence.file_type === 'video' ? (
-                      <PDFPreview pdfUrl={getApiUrl(`api/evidences/${evidence.id}/file`)} fileType="video" />
+                      <PDFPreview pdfUrl={getFileUrl(evidence.id)} fileType="video" />
                     ) : (
-                      <PDFPreview pdfUrl={getApiUrl(`api/evidences/${evidence.id}/file`)} fileType="pdf" />
+                      <PDFPreview pdfUrl={getFileUrl(evidence.id)} fileType="pdf" />
                     )}
                   </div>
                   <div className="flex justify-between items-start mb-2">
@@ -617,7 +628,7 @@ export default function Element() {
             }
           }}
         >
-          <div className="bg-gradient-to-br from-[#FEF5FB] to-white border-2 border-[#FFD1D9] rounded-3xl p-8 max-w-2xl w-full max-h-[95vh] flex flex-col shadow-2xl relative transition-transform duration-300 hover:scale-[1.02]">
+          <div className="bg-gradient-to-br from-[#FEF5FB] to-white border-2 border-[#FFD1D9] rounded-3xl p-8 max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl relative transition-transform duration-300 hover:scale-[1.02]">
             {/* Enhanced Close Button */}
             <button
               onClick={closeModal}
@@ -629,44 +640,42 @@ export default function Element() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            {/* Form Content */}
+
             {selectedEvidence.isEditing ? (
-              <form className="flex flex-col items-center justify-center w-full max-w-md mx-auto space-y-8 bg-white/80 rounded-2xl shadow-lg p-8 mt-4">
-                <h2 className="text-2xl font-bold text-[#E6A0B0] mb-2 tracking-tight">{selectedEvidence.isNew ? 'إضافة شاهد جديد' : 'تعديل الشاهد'}</h2>
-                <div className="w-full space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-[#E6A0B0] mb-1">رقم الشاهد</label>
-                    <input
-                      type="text"
-                      value={selectedEvidence.evidence_number}
-                      onChange={(e) => setSelectedEvidence({ ...selectedEvidence, evidence_number: e.target.value })}
-                      className="w-full rounded-xl border border-[#FFD1D9] shadow-sm focus:border-[#E6A0B0] focus:ring-2 focus:ring-[#E6A0B0]/30 px-4 py-2 text-lg bg-[#FEF5FB] placeholder-gray-400 transition-all"
-                      placeholder="مثال: 1.1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#E6A0B0] mb-1">العنوان</label>
-                    <input
-                      type="text"
-                      value={selectedEvidence.title}
-                      onChange={(e) => setSelectedEvidence({ ...selectedEvidence, title: e.target.value })}
-                      className="w-full rounded-xl border border-[#FFD1D9] shadow-sm focus:border-[#E6A0B0] focus:ring-2 focus:ring-[#E6A0B0]/30 px-4 py-2 text-lg bg-[#FEF5FB] placeholder-gray-400 transition-all"
-                      placeholder="عنوان الشاهد"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#E6A0B0] mb-1">الوصف</label>
-                    <textarea
-                      value={selectedEvidence.description || ''}
-                      onChange={(e) => setSelectedEvidence({ ...selectedEvidence, description: e.target.value })}
-                      className="w-full rounded-xl border border-[#FFD1D9] shadow-sm focus:border-[#E6A0B0] focus:ring-2 focus:ring-[#E6A0B0]/30 px-4 py-2 text-lg bg-[#FEF5FB] placeholder-gray-400 min-h-[80px] transition-all"
-                      rows={3}
-                      placeholder="أضف وصفًا أو رابطًا (اختياري)"
-                    />
-                  </div>
+              <form className="flex-1 flex flex-col gap-6 p-4">
+                <div className="flex flex-col gap-4">
+                  <label className="text-[#E6A0B0] font-semibold text-lg">رقم الشاهد</label>
+                  <input
+                    type="text"
+                    value={selectedEvidence.evidence_number}
+                    onChange={(e) => setSelectedEvidence({ ...selectedEvidence, evidence_number: e.target.value })}
+                    className="border-2 border-[#FFD1D9] rounded-xl p-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:border-transparent"
+                    placeholder="أدخل رقم الشاهد"
+                  />
                 </div>
-                <div className="w-full border-t border-[#FFD1D9] my-2"></div>
-                <div className="flex flex-col items-center justify-center gap-3 w-full mt-2">
+
+                <div className="flex flex-col gap-4">
+                  <label className="text-[#E6A0B0] font-semibold text-lg">عنوان الشاهد</label>
+                  <input
+                    type="text"
+                    value={selectedEvidence.title}
+                    onChange={(e) => setSelectedEvidence({ ...selectedEvidence, title: e.target.value })}
+                    className="border-2 border-[#FFD1D9] rounded-xl p-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:border-transparent"
+                    placeholder="أدخل عنوان الشاهد"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <label className="text-[#E6A0B0] font-semibold text-lg">وصف الشاهد</label>
+                  <textarea
+                    value={selectedEvidence.description}
+                    onChange={(e) => setSelectedEvidence({ ...selectedEvidence, description: e.target.value })}
+                    className="border-2 border-[#FFD1D9] rounded-xl p-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:border-transparent min-h-[150px]"
+                    placeholder="أدخل وصف الشاهد"
+                  />
+                </div>
+
+                <div className="flex flex-col items-center justify-center gap-4 w-full mt-4">
                   <button
                     type="button"
                     onClick={async () => {
@@ -711,35 +720,119 @@ export default function Element() {
                           }
 
                           const updatedEvidence = await response.json();
-                          setEvidences(evidences.map(e => 
-                            e.id === updatedEvidence.id ? updatedEvidence : e
-                          ));
-                          setSelectedEvidence(null);
+                          setEvidences(evidences.map(e => e.id === updatedEvidence.id ? updatedEvidence : e));
+                          setSelectedEvidence(updatedEvidence);
                         }
                       } catch (error) {
                         console.error('Error saving evidence:', error);
                         alert('حدث خطأ أثناء حفظ الشاهد');
                       }
                     }}
-                    className="bg-gradient-to-r from-[#E6A0B0] to-[#FFD1D9] hover:from-[#FFD1D9] hover:to-[#E6A0B0] text-white py-2 px-4 rounded-xl transition-all w-full max-w-xs shadow-md font-bold text-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#E6A0B0] focus:ring-offset-2"
+                    className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-3 px-8 rounded-xl transition-all w-full max-w-xs shadow font-semibold text-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2"
                   >
-                    {selectedEvidence.isNew ? 'إنشاء الشاهد' : 'حفظ التغييرات'}
+                    {selectedEvidence.isNew ? 'إضافة شاهد' : 'حفظ التغييرات'}
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setSelectedEvidence(null)}
-                    className="text-gray-600 hover:text-red-600 hover:bg-red-100 py-2 px-4 rounded-xl transition-all w-full max-w-xs shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2"
+                    className="text-gray-600 hover:text-red-600 hover:bg-red-100 py-3 px-8 rounded-xl transition-all w-full max-w-xs shadow font-semibold text-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2"
                   >
                     إلغاء
                   </button>
                 </div>
               </form>
             ) : (
-              <div className="flex-1 text-center mx-4">
-                <h3 className="text-xl font-semibold text-[#E6A0B0] mb-1">{selectedEvidence.title}</h3>
-                {selectedEvidence.description && (
-                  <p className="text-gray-600 text-lg" dangerouslySetInnerHTML={{ __html: selectedEvidence.description.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#E6A0B0] underline">$1</a>') }} />
-                )}
+              <div className="flex-1 flex flex-col gap-6">
+                <div className="text-center">
+                  <h3 className="text-2xl font-semibold text-[#E6A0B0] mb-2">{selectedEvidence.title}</h3>
+                  <p className="text-gray-600">رقم الشاهد: {selectedEvidence.evidence_number}</p>
+                  {selectedEvidence.description && (
+                    <p className="text-gray-600 mt-2" dangerouslySetInnerHTML={{ 
+                      __html: selectedEvidence.description.replace(/(https?:\/\/[^\s]+)/g, 
+                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#E6A0B0] underline">$1</a>') 
+                    }} />
+                  )}
+                </div>
+
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="h-[400px] bg-gray-50 rounded-xl overflow-hidden relative">
+                    {selectedEvidence.file_type !== 'none' ? (
+                      <>
+                        {selectedEvidence.file_type === 'image' ? (
+                          <img 
+                            src={getFileUrl(selectedEvidence.id)}
+                            alt={selectedEvidence.title}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : selectedEvidence.file_type === 'video' ? (
+                          <video 
+                            src={getFileUrl(selectedEvidence.id)}
+                            controls
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <iframe
+                            src={getFileUrl(selectedEvidence.id)}
+                            className="w-full h-full"
+                          />
+                        )}
+                        <div className="absolute bottom-4 right-4 flex gap-2">
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept=".pdf,image/*,video/*"
+                          />
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingFile}
+                            className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {uploadingFile ? 'جاري الرفع...' : 'تغيير الملف'}
+                          </button>
+                          <button
+                            onClick={handleDeleteFile}
+                            disabled={deletingFile}
+                            className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {deletingFile ? 'جاري الحذف...' : 'حذف الملف'}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+                        <p className="text-gray-500">لا يوجد ملف مرفق</p>
+                        <div className="flex gap-4">
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept=".pdf,image/*,video/*"
+                          />
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingFile}
+                            className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-4 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {uploadingFile ? 'جاري الرفع...' : 'رفع ملف'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => setSelectedEvidence({ ...selectedEvidence, isEditing: true })}
+                    className="bg-[#E6A0B0] hover:bg-[#D48A9A] text-white py-2 px-6 rounded-xl transition-all shadow font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FFD1D9] focus:ring-offset-2"
+                  >
+                    تعديل
+                  </button>
+                </div>
               </div>
             )}
           </div>
