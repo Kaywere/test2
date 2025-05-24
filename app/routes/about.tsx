@@ -270,7 +270,7 @@ export default function About() {
           
           {/* Awards & Achievements */}
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-[#E6A0B0] mb-6">الإنجازات والجوائز</h2>
+            <h2 className="text-3xl font-bold text-[#E6A0B0] mb-6"> </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {aboutData.achievements && aboutData.achievements.map((achievement, idx) => (
