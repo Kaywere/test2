@@ -21,7 +21,7 @@ interface AboutMeData {
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "نبذة عني - بورتفوليو المعلمة" },
+    { title: "نبذة عني - الشواهد" },
     { name: "description", content: "نبذة تعريفية عن المعلمة المتميزة ومسيرتها المهنية وإنجازاتها" },
   ];
 }
@@ -104,7 +104,7 @@ export default function About() {
             <div className="flex-1 flex items-center">
               <div className="flex-shrink-0">
                 <Link to="/" className="flex items-center">
-                  <span className="text-[#E6A0B0] text-2xl font-bold">بورتفوليو المعلمة</span>
+                  <span className="text-[#E6A0B0] text-2xl font-bold">الشواهد</span>
                   <span className="text-[#FFD1D9] ml-1">✿</span>
                 </Link>
               </div>

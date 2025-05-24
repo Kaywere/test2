@@ -38,7 +38,7 @@ export function meta({ params }: Route.MetaArgs) {
   const elementId = params.id;
   
   return [
-    { title: "عنصر التقييم - بورتفوليو المعلمة" },
+    { title: "عنصر التقييم - الشواهد" },
     { name: "description", content: "صفحة عنصر التقييم" },
   ];
 }
@@ -428,7 +428,7 @@ export default function Element() {
             <div className="flex-1 flex items-center">
               <div className="flex-shrink-0">
                 <Link to="/" className="flex items-center">
-                  <span className="text-[#E6A0B0] text-2xl font-bold">بورتفوليو المعلمة</span>
+                  <span className="text-[#E6A0B0] text-2xl font-bold">الشواهد</span>
                   <span className="text-[#FFD1D9] ml-1">✿</span>
                 </Link>
               </div>
