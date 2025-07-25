@@ -6,8 +6,9 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  // Build the target URL
-  const targetUrl = apiUrl + req.url;
+  // Remove '/api/proxy' from the start of the path
+  const path = req.url.replace(/^\/api\/proxy/, '') || '/';
+  const targetUrl = apiUrl + path;
 
   // Prepare fetch options
   const fetchOptions = {
